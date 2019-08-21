@@ -56,10 +56,13 @@ common parameters, e.g.
     C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus1.sharepoint.com/teams/sitename" @Params
     C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus2.sharepoint.com/teams/sitename" @Params
     C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus3.sharepoint.com/teams/sitename" @Params
-    
+
 .NOTES
     Author: Linda Busdiecker
     Date: 08/21/2019
+
+    Many thanks to @SharePointDiary - this work was based off of
+    https://www.sharepointdiary.com/2017/01/how-to-change-friendly-date-format-in-sharepoint.html
 #>
 #Requires -Module SharePointPnPPowerShellOnline 
 function Set-SitewideDateFormat {
