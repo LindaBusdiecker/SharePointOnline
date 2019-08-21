@@ -1,6 +1,2 @@
 # SharePointOnline
-Scripts to support my SharePoint Online work (#SharePoint #PowerShell #SharePointPnPPowerShellOnline)
-
-New test
-
-Another test
+My publicly shared SharePoint Online scripts (#SharePoint #PowerShell #SharePointPnPPowerShellOnline).
