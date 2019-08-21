@@ -1,18 +1,35 @@
 <#
 .SYNOPSIS
-    For a particular site, this will set the date format of all date fields to the 
-    particular format specified.
+    For a particular site, this will set all existing date columns to the particular format specified.
+
 .DESCRIPTION
-    Given the URL to a site, this traverses all lists and libraries and sets 
-    the format of all date fields to the format specified, using the enumeration
-    specified in https://docs.microsoft.com/en-us/previous-versions/office/sharepoint-server/jj174848(v=office.15).
+    Given the URL to a SharePoint site, this traverses all lists and libraries and sets the
+    format of all existing date columns (aka fields) to the format specified. The web interface refers 
+    to the formats as Standard and Friendly, which correspond to Disabled and Relative.
+
+    The cmdlet will not run if SharePointPnPPowerShellOnline has not been imported.
+
+    This requires -the module SharePointPnPPowerShellOnline. If you're not certain 
+    it is available in your session, use Get-Module to find out or if it is installed,
+    just import it, e.g.
+        Import-Module SharePointPnPPowerShellOnline -Scope Local -ErrorAction Stop
 
 .PARAMETER SiteURL
+    SiteURL is the URL for the site for which the format of existing Date and Time
+    columns should be standardized.
+
     Example: "https://bogus.sharepoint.com/teams/sitename"
 
 .PARAMETER FriendlyDate
 
-    For field with TypeAsString of DateTime, the property FriendlyDisplayFormat is set.
+    FriendlyDate is the enumeration you want to standardize current Date and Time column formats.
+    The enumeration is specified in
+    https://docs.microsoft.com/en-us/previous-versions/office/sharepoint-server/jj174848(v=office.15).
+
+    This does not impact Date and Time columns entered after this is run.
+
+    In the PowerShell script, you get the Date and Time by looking for columns whose
+    TypeAsString is DateTime, the format gets changed by modifying the property FriendlyDisplayFormat.
 
     Name: "Unspecified"
     Description: Undefined. The default rendering will be used. Value = 0. 
@@ -24,103 +41,71 @@
     Description: The standard friendly relative representation will be used (for example, "today at 3:00 PM"). Value = 2. 
 
 .EXAMPLE 
+    Credentials are passed in so they are not requested each time this is run, so before running 
+    this function, you might run
+        C:\PS> $Credential = Get-Credential
 
-    *** Disabling friendly date for existing date fields, but with a federated sign-in realm issue
+    This example causes existing date columns to have the Standard (rather than Friendly) format.
+    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus.sharepoint.com/teams/sitename" `
+           -FriendlyDate "Disabled" -Credential $Credential
 
-    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus.sharepoint.com/teams/sitename" -FriendlyDate "Disabled" -verbose
-
-    cmdlet Get-Credential at command pipeline position 1
-    Supply values for the following parameters:
-    User: ******
-    Password for user ******: ***********
-    Connect-PnPOnline : Identity Client Runtime Library (IDCRL) could not look up the realm information for a federated sign-in.
-    At H:\PS\SP\Set-SitewideDateFormat.ps1:63 char:13
-    +     $Site = Connect-PnPOnline -Url $SiteUrl -Credential $Credentials  ...
-    +             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        + CategoryInfo          : NotSpecified: (:) [Connect-PnPOnline], IdcrlException
-        + FullyQualifiedErrorId : Microsoft.SharePoint.Client.IdcrlException,SharePointPnP.PowerShell.Commands.Base.ConnectOnline
-
-    VERBOSE: List [appdata], Field [Modified] initial value: [Relative]
-    VERBOSE: List [appdata], Field [Modified] updated value: [Disabled]
-
-    VERBOSE: List [appdata], Field [Created] initial value: [Relative]
-    VERBOSE: List [appdata], Field [Created] updated value: [Disabled]
-
-    ...
 .EXAMPLE
-
-    *** Successful disabling friendly date for existing date fields
-
-    PS H:\PS\SP> Set-SitewideDateFormat -SiteURL "https://bogus.sharepoint.com/teams/sitename" -FriendlyDate "Disabled" -verbose
-    cmdlet Get-Credential at command pipeline position 1
-    Supply values for the following parameters:
-    User: ******
-    Password for user ******: ***********
-    VERBOSE: PnP PowerShell Cmdlets (3.12.1908.1): Connected to https://bogus.sharepoint.com/teams/sitename
-    VERBOSE: List [appdata], Field [Modified] initial value: [Disabled]
-    VERBOSE: List [appdata], Field [Modified] updated value: [Disabled]
-
-    VERBOSE: List [appdata], Field [Created] initial value: [Disabled]
-    VERBOSE: List [appdata], Field [Created] updated value: [Disabled]
-
-    ...
-.EXAMPLE
-    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus.sharepoint.com/teams/sitename" -FriendlyDate "Relative" -verbose
-.EXAMPLE
-    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus.sharepoint.com/teams/sitename" -FriendlyDate "Unspecified" -verbose
+If you are setting the format across a number of sites, consider splatting the 
+common parameters, e.g.
+    C:\PS> $Params = @{'FriendlyDate'='Disabled';'Credential'=$Credential}
+    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus1.sharepoint.com/teams/sitename" @Params
+    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus2.sharepoint.com/teams/sitename" @Params
+    C:\PS> Set-SitewideDateFormat -SiteURL "https://bogus3.sharepoint.com/teams/sitename" @Params
+    
 .NOTES
     Author: Linda Busdiecker
     Date: 08/21/2019
 #>
-#Import-Module SharePointPnPPowerShellOnline -Scope Local -ErrorAction Stop
 #Requires -Module SharePointPnPPowerShellOnline 
 function Set-SitewideDateFormat {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)] [String] $SiteURL,
-        [Parameter(Mandatory = $true)] [ValidateSet("Undefined", "Disabled", "Relative")] [Microsoft.SharePoint.Client.DateTimeFieldFriendlyFormatType] $FriendlyDate
+        [Parameter(Mandatory = $true)] 
+        [String] $SiteURL,
+
+        [Parameter(Mandatory = $true)] 
+        [ValidateSet("Undefined", "Disabled", "Relative")] 
+        [Microsoft.SharePoint.Client.DateTimeFieldFriendlyFormatType] $FriendlyDate,
+
+        
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
+        $Credential = [System.Management.Automation.PSCredential]::Empty
     )
-
-    # $Modules = Get-InstalledModule
-    # ForEach ($Module in $Modules) {
-    #     If ($Module.Name -eq "SharePointPnPPowerShellOnline") {
-    #         $Continue = $true
-    #     }
-    #     ElseIf ($Module.Name.StartsWith("SharePointPnPPowerShell")) {
-    #         Try {
-    #             Remove-Module $Module.Name -Scope Local -Verbose -Force -ErrorAction Stop
-    #             $Continue = $true 
-    #         }
-    #         Catch {
-    #             Write-Error "[$($Module.Name)] is installed and could cause issues"
-    #         }
-    #     }
-    # }
-
-    $Credentials = Get-Credential
     
-    $Site = Connect-PnPOnline -Url $SiteUrl -Credential $Credentials -ReturnConnection -ErrorAction Stop
+    Try {
+        $Site = Connect-PnPOnline -Url $SiteUrl -Credential $Credential -ReturnConnection -ErrorAction Stop
 
-    $Context = $Site.Context
-    $Context.ExecuteQuery()
-
-    $Lists = $Context.Web.Lists
-    $Context.Load($Lists)
-    $Context.ExecuteQuery()
-
-    ForEach ($List in $Lists) {
-
-        $Fields = $List.Fields
-        $Site.Context.Load($Fields)
+        $Context = $Site.Context
         $Context.ExecuteQuery()
 
-        ForEach ($Field in $Fields) {
-            If ($Field.TypeAsString -eq "DateTime") {
-                Write-Verbose "List [$($List.Title)], Field [$($Field.Title)] initial value: [$($Field.FriendlyDisplayFormat)]"
-                $Field.FriendlyDisplayFormat = $FriendlyDate
-                $Field.Update()
-                Write-Verbose "List [$($List.Title)], Field [$($Field.Title)] updated value: [$($Field.FriendlyDisplayFormat)]`n"
+        $Lists = $Context.Web.Lists
+        $Context.Load($Lists)
+        $Context.ExecuteQuery()
+
+        ForEach ($List in $Lists) {
+
+            $Fields = $List.Fields
+            $Site.Context.Load($Fields)
+            $Context.ExecuteQuery()
+
+            ForEach ($Field in $Fields) {
+                If ($Field.TypeAsString -eq "DateTime") {
+                    Write-Verbose "Before: List [$($List.Title)], Field [$($Field.Title)] value: [$($Field.FriendlyDisplayFormat)]"
+                    $Field.FriendlyDisplayFormat = $FriendlyDate
+                    $Field.Update()
+                    Write-Verbose "After: List [$($List.Title)], Field [$($Field.Title)] value: [$($Field.FriendlyDisplayFormat)]`n"
+                }
             }
         }
+    }
+    Catch {
+        Write-Error "Error - $_"
     }
 }
