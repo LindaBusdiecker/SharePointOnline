@@ -7,9 +7,7 @@
     format of all existing date columns (aka fields) to the format specified. The web interface refers 
     to the formats as Standard and Friendly, which correspond to Disabled and Relative.
 
-    The cmdlet will not run if SharePointPnPPowerShellOnline has not been imported.
-
-    This requires -the module SharePointPnPPowerShellOnline. If you're not certain 
+    This requires the module SharePointPnPPowerShellOnline. If you're not certain 
     it is available in your session, use Get-Module to find out or if it is installed,
     just import it, e.g.
         Import-Module SharePointPnPPowerShellOnline -Scope Local -ErrorAction Stop
