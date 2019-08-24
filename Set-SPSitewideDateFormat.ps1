@@ -63,7 +63,7 @@ common parameters, e.g.
     https://www.sharepointdiary.com/2017/01/how-to-change-friendly-date-format-in-sharepoint.html
 #>
 #Requires -Module SharePointPnPPowerShellOnline 
-function Set-SitewideDateFormat {
+function Set-SPSitewideDateFormat {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)] 
